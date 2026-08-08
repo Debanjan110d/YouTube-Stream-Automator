@@ -33,6 +33,7 @@ A major flaw of typical JWT implementations is that the payload is base64-encode
 To defend against OAuth callback hijacking and authorization state hijacking:
 
 - **OAuth Callback Code Exchange**: The exchange of Google's authorization `code` for credentials is done entirely on the server-side in [app/api/auth/callback/route.ts](file:///d:/projects/livestream_set/app/api/auth/callback/route.ts). The client secret `YOUTUBE_CLIENT_SECRET` is never exposed to the frontend.
+- **Dynamic Callback Origin Resolution**: Rather than relying on hardcoded environment configurations, the server evaluates the redirect URL origin dynamically from the incoming request (`new URL(request.url).origin`). This eliminates hosting URL mismatch errors and simplifies deployment across multiple domains.
 - **Cryptographic State Parameter**:
   1. On login, the server generates a cryptographically random UUID state:
      ```typescript
@@ -42,7 +43,7 @@ To defend against OAuth callback hijacking and authorization state hijacking:
   3. Upon callback redirect, the server verifies that the state returned from Google matches the cookie state. If they mismatch or are missing, the request is instantly rejected (CSRF Block).
   4. The temporary cookie is immediately cleared.
 - **Implementation Locations**:
-  - State Generation: [login/route.ts](file:///d:/projects/livestream_set/app/api/auth/login/route.ts)
+  - State Generation & Origin Evaluation: [login/route.ts](file:///d:/projects/livestream_set/app/api/auth/login/route.ts)
   - State Verification: [callback/route.ts](file:///d:/projects/livestream_set/app/api/auth/callback/route.ts)
 
 ---

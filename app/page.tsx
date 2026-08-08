@@ -404,6 +404,12 @@ export default function PublicHomePage() {
       <footer className="border-t border-[#2d2d2d] bg-[#0f0f0f] py-6 text-center text-xs text-zinc-500 z-10">
         <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p>© 2026 YouTube Stream Automator. All rights reserved.</p>
+          
+          <div className="flex gap-4">
+            <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
+          </div>
+
           <a 
             href="https://github.com/Debanjan110d" 
             target="_blank" 
