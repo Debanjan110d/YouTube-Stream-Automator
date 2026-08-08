@@ -10,7 +10,7 @@ export async function GET() {
 
   if (!clientId || !clientSecret || !appUrl) {
     return NextResponse.json(
-      { error: 'OAuth credentials or App URL is not configured in .env.local.' },
+      { error: 'OAuth credentials or App URL is not configured in environment variables.' },
       { status: 500 }
     );
   }
