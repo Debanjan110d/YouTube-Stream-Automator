@@ -1,17 +1,19 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import { cookies } from 'next/headers';
 import crypto from 'crypto';
 
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const clientId = process.env.YOUTUBE_CLIENT_ID;
   const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  
+  // Dynamically resolve origin from the request to bypass NEXT_PUBLIC_APP_URL configuration errors
+  const appUrl = new URL(request.url).origin;
 
-  if (!clientId || !clientSecret || !appUrl) {
+  if (!clientId || !clientSecret) {
     return NextResponse.json(
-      { error: 'OAuth credentials or App URL is not configured in environment variables.' },
+      { error: 'Google OAuth Client ID or Client Secret is not configured in Vercel environment variables.' },
       { status: 500 }
     );
   }

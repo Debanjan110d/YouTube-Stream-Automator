@@ -12,7 +12,9 @@ export async function GET(request: NextRequest) {
 
   const clientId = process.env.YOUTUBE_CLIENT_ID;
   const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  
+  // Dynamically resolve origin from request
+  const appUrl = new URL(request.url).origin;
 
   // Retrieve and delete the saved OAuth state cookie to verify origin
   const cookieStore = await cookies();
@@ -36,9 +38,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Authorization code is missing.' }, { status: 400 });
   }
 
-  if (!clientId || !clientSecret || !appUrl) {
+  if (!clientId || !clientSecret) {
     return NextResponse.json(
-      { error: 'OAuth configuration values are missing.' },
+      { error: 'Google Client ID or Client Secret environment values are missing.' },
       { status: 500 }
     );
   }

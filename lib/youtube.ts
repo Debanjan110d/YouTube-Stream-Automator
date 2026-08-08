@@ -16,9 +16,9 @@ export async function getYouTubeClient() {
 
   const clientId = process.env.YOUTUBE_CLIENT_ID;
   const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-  if (!clientId || !clientSecret || !appUrl) {
+  if (!clientId || !clientSecret) {
     throw new Error('Google OAuth credentials are not properly configured.');
   }
 
