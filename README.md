@@ -50,6 +50,28 @@ Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 
 ---
 
+## 🛠️ YouTube Channel & Google Cloud Setup (Prerequisites)
+
+Before running the application in development or production, make sure you complete these two crucial setup steps:
+
+### 1. Enable Live Streaming on YouTube
+YouTube requires account verification before allowing automated scheduling or broadcasts:
+1. Go to **[YouTube Studio](https://studio.youtube.com)**.
+2. Click **Create** (top right) and select **Go Live**.
+3. If prompt appears, complete the phone verification check.
+4. **Google takes exactly 24 hours to activate live streaming.** You will receive a `403 Forbidden` error if you try to use the scheduling tool before this activation completes.
+
+### 2. Configure Google Cloud Credentials
+1. Go to the **[Google Cloud Console](https://console.cloud.google.com)**.
+2. Search and enable the **YouTube Data API v3** in the API library.
+3. Configure your **OAuth Consent Screen** (Branding, Support Email, and Scopes: `.../auth/youtube` and `.../auth/userinfo.profile`).
+4. Generate an **OAuth 2.0 Client ID (Web Application)**.
+5. Add Authorized Redirect URIs:
+   - Development: `http://localhost:3000/api/auth/callback`
+   - Production: `https://[your-app].vercel.app/api/auth/callback`
+
+---
+
 ## 📁 Importing Templates
 The scheduler accepts three main formats. View our **[Import Templates Guide](file:///d:/projects/livestream_set/IMPORT_TEMPLATES.md)** for copy-pasteable files.
 
