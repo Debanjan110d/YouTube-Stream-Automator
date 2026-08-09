@@ -167,6 +167,25 @@ export default function StreamAutomatorDashboard() {
   };
 
 
+  // Parses stream configuration from raw text pasted by user (JSON, Markdown, YAML)
+  const handleTextParse = (text: string) => {
+    try {
+      const parsed = parseStreamFile(text);
+      
+      setTitle(parsed.title);
+      setTitleOptions(parsed.titles || []);
+      setDescription(parsed.description);
+      setCategoryId(parsed.categoryId);
+      setTags(parsed.tags);
+      setPrivacyStatus(parsed.privacyStatus);
+
+      showFeedback('success', 'Configuration parsed and applied!');
+    } catch (err) {
+      showFeedback('error', 'Formatting error. Could not parse pasted configuration.');
+    }
+  };
+
+
   // Client-side image compression handler
   const handleImageUpload = async (file: File) => {
     if (!file) return;
@@ -405,7 +424,11 @@ export default function StreamAutomatorDashboard() {
             {/* Left panel: Uploaders and side controls */}
             <div className="lg:col-span-4 space-y-6">
               <QuickActions onLoadLastStream={handleLoadLastStream} loadingLastStream={loadingLastStream} />
-              <MarkdownUploader onMarkdownUpload={handleMarkdownUpload} showFeedback={showFeedback} />
+              <MarkdownUploader 
+                onMarkdownUpload={handleMarkdownUpload} 
+                onTextParse={handleTextParse} 
+                showFeedback={showFeedback} 
+              />
               <ThumbnailUploader 
                 thumbnailPreview={thumbnailPreview}
                 compressing={compressing}
