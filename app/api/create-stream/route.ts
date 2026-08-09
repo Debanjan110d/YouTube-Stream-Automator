@@ -174,6 +174,17 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Pipeline Error:', error);
+
+    const errMessage = error.message || '';
+    const isLiveStreamingDisabled = errMessage.includes('not enabled for live streaming');
+
+    if (isLiveStreamingDisabled) {
+      return NextResponse.json(
+        { error: 'Live streaming is not enabled on this YouTube channel. Please visit YouTube Studio to request activation (takes 24 hours to verify).' },
+        { status: 403 }
+      );
+    }
+
     return NextResponse.json(
       { error: 'Failed to complete stream configuration pipeline.', details: error.message },
       { status: 500 }

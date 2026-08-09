@@ -64,6 +64,17 @@ export async function GET() {
     });
   } catch (error: any) {
     console.error('Error fetching previous stream details:', error);
+    
+    const errMessage = error.message || '';
+    const isLiveStreamingDisabled = errMessage.includes('not enabled for live streaming');
+
+    if (isLiveStreamingDisabled) {
+      return NextResponse.json(
+        { error: 'Live streaming is not enabled on this YouTube channel. Please visit YouTube Studio to request activation (takes 24 hours to verify).' },
+        { status: 403 }
+      );
+    }
+
     return NextResponse.json(
       { error: 'Failed to fetch previous stream details.', details: error.message },
       { status: 500 }
