@@ -11,19 +11,19 @@ export default function LandingHero({ loginUrl }: LandingHeroProps) {
     <div className="flex min-h-screen items-center justify-center bg-[#0f0f0f] text-white p-6 relative overflow-hidden">
       {/* Glowing background meshes */}
       <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#ff0000]/5 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 bg-[#ff0000]/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 bg-[#00e701]/3 rounded-full blur-3xl pointer-events-none" />
 
       <div className="max-w-xl w-full text-center space-y-8 z-10">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#ff0000]/10 border border-[#ff0000]/20 text-xs text-[#ff3333] font-semibold uppercase tracking-wider mb-2 animate-pulse">
-          <Sparkles className="h-3.5 w-3.5 text-[#ff0000]" /> General Purpose Stream Scheduler
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-[#ff0000]/10 to-[#00e701]/10 border border-zinc-800 text-xs text-zinc-300 font-semibold uppercase tracking-wider mb-2">
+          <Sparkles className="h-3.5 w-3.5 text-[#ff0000]" /> YouTube & Kick Automation Tool
         </div>
         
         <div className="space-y-4">
-          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white font-sans">
-            YouTube <span className="text-[#ff0000]">Stream Automator</span>
+          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white font-sans leading-tight">
+            Multi-Platform <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#ff0000] to-[#00e701]">Stream Automator</span>
           </h1>
           <p className="text-zinc-400 text-base sm:text-lg leading-relaxed">
-            Instantly configure and schedule live events on your channel. Upload a stream configuration file (.md, .json, .yaml), select your thumbnail, and bind it to OBS in one single click.
+            Instantly schedule and synchronize live streams on YouTube and Kick. Parse Markdown, JSON, or YAML template configs, compress your thumbnails, and go live instantly.
           </p>
         </div>
 

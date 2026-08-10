@@ -27,6 +27,7 @@ const MD_TEMPLATE = `---
 title: "Building a Next.js API route 🚀 #webdev #nextjs"
 type: "28"
 privacy: "public"
+game: "Software Development"
 tags: ["nextjs", "typescript", "api", "web development", "backend", "live coding"]
 ---
 Welcome to today's livestream session!
@@ -48,6 +49,7 @@ const JSON_TEMPLATE = `{
   ],
   "categoryId": "28",
   "privacyStatus": "public",
+  "gameName": "Software Development",
   "tags": ["oauth2", "google login", "session", "security", "node js", "web dev"],
   "description": "Welcome to Gamer's Code Lab!\\n\\nIn this session, we will deep dive into securing Google and YouTube API logins, managing offline refresh tokens, and encrypting cookie payloads using server-side JWE.\\n\\nCheck out the GitHub link in the description for the full source code."
 }`;
@@ -59,6 +61,7 @@ const YAML_TEMPLATE = `title:
   - "Live Coding: Building a React Dashboard 💻 #webdev"
 category: "28"
 privacy: "unlisted"
+game: "Software Development"
 tags:
   - react
   - javascript

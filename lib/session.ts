@@ -8,11 +8,20 @@ const COOKIE_NAME = 'youtube_stream_session';
 
 // Define the session payload structure
 export interface SessionPayload {
-  accessToken: string;
+  // YouTube auth (Google OAuth 2.0)
+  accessToken?: string;
   refreshToken?: string;
-  expiryDate?: number; // timestamp in milliseconds when access token expires
+  expiryDate?: number;
   channelName?: string;
   channelAvatar?: string;
+
+  // Kick auth (Kick OAuth 2.1 PKCE)
+  kickAccessToken?: string;
+  kickRefreshToken?: string;
+  kickExpiryDate?: number;
+  kickChannelSlug?: string;
+  kickChannelName?: string;
+  kickChannelAvatar?: string;
 }
 
 

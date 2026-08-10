@@ -13,6 +13,7 @@ import MarkdownUploader from '@/components/MarkdownUploader';
 import ThumbnailUploader from '@/components/ThumbnailUploader';
 import TagManager from '@/components/TagManager';
 import SyncOverlay from '@/components/SyncOverlay';
+import PlatformConnections from '@/components/PlatformConnections';
 
 import { 
   CheckCircle2, 
@@ -70,6 +71,11 @@ export default function StreamAutomatorDashboard() {
   const [originalSize, setOriginalSize] = useState<string | null>(null);
   const [compressedSize, setCompressedSize] = useState<string | null>(null);
 
+  // Kick states
+  const [kickChannelInfo, setKickChannelInfo] = useState<{ slug: string; name: string; avatar: string } | null>(null);
+  const [kickSync, setKickSync] = useState(false);
+  const [gameName, setGameName] = useState('');
+
   // Pipeline execution & step progress states
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -109,8 +115,17 @@ export default function StreamAutomatorDashboard() {
       const res = await fetch('/api/auth/status');
       if (res.ok) {
         const data = await res.json();
-        setIsAuthenticated(true);
-        setChannelInfo({ name: data.channelName, avatar: data.channelAvatar });
+        setIsAuthenticated(!!data.youtube);
+        if (data.youtube) {
+          setChannelInfo({ name: data.youtube.name, avatar: data.youtube.avatar });
+        } else {
+          setChannelInfo(null);
+        }
+        if (data.kick) {
+          setKickChannelInfo({ slug: data.kick.slug, name: data.kick.name, avatar: data.kick.avatar });
+        } else {
+          setKickChannelInfo(null);
+        }
       } else {
         setIsAuthenticated(false);
       }
@@ -128,6 +143,7 @@ export default function StreamAutomatorDashboard() {
       if (res.ok) {
         setIsAuthenticated(false);
         setChannelInfo(null);
+        setKickChannelInfo(null);
       }
     } catch (e) {
       console.error('Logout request failed:', e);
@@ -157,6 +173,7 @@ export default function StreamAutomatorDashboard() {
         setCategoryId(parsed.categoryId);
         setTags(parsed.tags);
         setPrivacyStatus(parsed.privacyStatus);
+        setGameName(parsed.gameName || '');
 
         showFeedback('success', `Parsed "${file.name}"! Config applied.`);
       } catch (err) {
@@ -178,6 +195,7 @@ export default function StreamAutomatorDashboard() {
       setCategoryId(parsed.categoryId);
       setTags(parsed.tags);
       setPrivacyStatus(parsed.privacyStatus);
+      setGameName(parsed.gameName || '');
 
       showFeedback('success', 'Configuration parsed and applied!');
     } catch (err) {
@@ -272,12 +290,16 @@ export default function StreamAutomatorDashboard() {
     setSyncError('');
 
     // Reset step tracker status
-    setSyncSteps([
-      { id: 1, label: 'Creating YouTube Broadcast Event', status: 'running' },
-      { id: 2, label: 'Applying Category & SEO Search Tags', status: 'idle' },
-      { id: 3, label: 'Uploading Compressed Stream Thumbnail', status: 'idle' },
-      { id: 4, label: 'Binding Broadcast to OBS Stream Key', status: 'idle' },
-    ]);
+    const initialSteps = [
+      { id: 1, label: 'Creating YouTube Broadcast Event', status: 'running' as const },
+      { id: 2, label: 'Applying Category & SEO Search Tags', status: 'idle' as const },
+      { id: 3, label: 'Uploading Compressed Stream Thumbnail', status: 'idle' as const },
+      { id: 4, label: 'Binding Broadcast to OBS Stream Key', status: 'idle' as const },
+    ];
+    if (kickSync) {
+      initialSteps.push({ id: 5, label: 'Syncing livestream metadata to Kick', status: 'idle' as const });
+    }
+    setSyncSteps(initialSteps);
 
     try {
       const formData = new FormData();
@@ -287,6 +309,8 @@ export default function StreamAutomatorDashboard() {
       formData.append('privacyStatus', privacyStatus);
       formData.append('scheduledTime', scheduledTime);
       formData.append('tags', JSON.stringify(tags));
+      formData.append('kickSync', String(kickSync));
+      formData.append('gameName', gameName);
 
       if (thumbnailFile) {
         formData.append('thumbnail', thumbnailFile);
@@ -301,7 +325,7 @@ export default function StreamAutomatorDashboard() {
       // Quick visual updates for step transition micro-animations
       setTimeout(() => {
         setSyncSteps(prev => {
-          if (prev[0].status === 'running') {
+          if (prev[0]?.status === 'running') {
             return prev.map(s => s.id === 1 ? { ...s, status: 'success' } : s.id === 2 ? { ...s, status: 'running' } : s);
           }
           return prev;
@@ -310,7 +334,7 @@ export default function StreamAutomatorDashboard() {
 
       setTimeout(() => {
         setSyncSteps(prev => {
-          if (prev[1].status === 'running') {
+          if (prev[1]?.status === 'running') {
             return prev.map(s => s.id === 2 ? { ...s, status: 'success' } : s.id === 3 ? { ...s, status: 'running' } : s);
           }
           return prev;
@@ -319,26 +343,55 @@ export default function StreamAutomatorDashboard() {
 
       setTimeout(() => {
         setSyncSteps(prev => {
-          if (prev[2].status === 'running') {
+          if (prev[2]?.status === 'running') {
             return prev.map(s => s.id === 3 ? { ...s, status: 'success' } : s.id === 4 ? { ...s, status: 'running' } : s);
           }
           return prev;
         });
       }, 6000);
 
+      if (kickSync) {
+        setTimeout(() => {
+          setSyncSteps(prev => {
+            if (prev[3]?.status === 'running') {
+              return prev.map(s => s.id === 4 ? { ...s, status: 'success' } : s.id === 5 ? { ...s, status: 'running' } : s);
+            }
+            return prev;
+          });
+        }, 8000);
+      }
+
       const res = await responsePromise;
       const data = await res.json();
 
       if (res.ok) {
-        setSyncSteps([
+        const finalSteps: {
+          id: number;
+          label: string;
+          status: 'idle' | 'running' | 'success' | 'error';
+        }[] = [
           { id: 1, label: 'Creating YouTube Broadcast Event', status: 'success' },
           { id: 2, label: 'Applying Category & SEO Search Tags', status: 'success' },
           { id: 3, label: 'Uploading Compressed Stream Thumbnail', status: thumbnailFile ? 'success' : 'idle' },
           { id: 4, label: 'Binding Broadcast to OBS Stream Key', status: data.boundStream ? 'success' : 'idle' },
-        ]);
+        ];
+        if (kickSync) {
+          finalSteps.push({
+            id: 5,
+            label: 'Syncing livestream metadata to Kick',
+            status: data.kickSynced ? 'success' : 'error'
+          });
+        }
+        setSyncSteps(finalSteps);
         setSyncResultVideoId(data.videoId);
         setBoundStream(data.boundStream);
-        setSyncStatus('success');
+        
+        if (kickSync && !data.kickSynced) {
+          setSyncStatus('error');
+          setSyncError(data.kickError || 'Kick configuration update failed.');
+        } else {
+          setSyncStatus('success');
+        }
       } else {
         setSyncSteps((prev) =>
           prev.map((step) =>
@@ -382,7 +435,7 @@ export default function StreamAutomatorDashboard() {
     <div className="min-h-screen bg-[#0f0f0f] text-white relative font-sans flex flex-col justify-between">
       {/* Floating background mesh accents */}
       <div className="absolute top-0 right-1/4 w-80 h-80 bg-[#ff0000]/5 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-[#ff0000]/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-[#00e701]/3 rounded-full blur-3xl pointer-events-none" />
 
       <div>
         <DashboardHeader channelInfo={channelInfo} onLogout={handleLogout} />
@@ -423,6 +476,12 @@ export default function StreamAutomatorDashboard() {
             
             {/* Left panel: Uploaders and side controls */}
             <div className="lg:col-span-4 space-y-6">
+              <PlatformConnections 
+                youtubeInfo={channelInfo}
+                kickInfo={kickChannelInfo}
+                onDisconnectKick={() => setKickChannelInfo(null)}
+                showFeedback={showFeedback}
+              />
               <QuickActions onLoadLastStream={handleLoadLastStream} loadingLastStream={loadingLastStream} />
               <MarkdownUploader 
                 onMarkdownUpload={handleMarkdownUpload} 
@@ -591,6 +650,83 @@ export default function StreamAutomatorDashboard() {
 
                   </div>
 
+                  {/* Kick Sync Panel */}
+                  <div className="bg-[#171717] border border-[#2d2d2d] rounded-xl p-4.5 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <h4 className="text-xs font-bold text-zinc-200 uppercase tracking-wide flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          Synchronize to Kick channel
+                        </h4>
+                        <p className="text-[10px] text-zinc-400">
+                          {kickChannelInfo 
+                            ? `Apply metadata changes simultaneously to kick.com/${kickChannelInfo.slug}` 
+                            : 'Link your Kick account in the sidebar connection manager first.'}
+                        </p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={kickSync}
+                          disabled={!kickChannelInfo}
+                          onChange={(e) => setKickSync(e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-[#2d2d2d] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                      </label>
+                    </div>
+
+                    {kickSync && (
+                      <div className="space-y-4 pt-3 border-t border-[#2d2d2d] animate-slide-up">
+                        
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-zinc-300">Popular Categories</label>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            {[
+                              { name: 'Just Chatting' },
+                              { name: 'Software Development' },
+                              { name: 'Talk Shows & Podcasts' },
+                              { name: 'Music' },
+                              { name: 'Art' },
+                              { name: 'Minecraft' },
+                              { name: 'Grand Theft Auto V' },
+                              { name: 'Valorant' },
+                              { name: 'Fortnite' },
+                            ].map((cat) => (
+                              <button
+                                key={cat.name}
+                                type="button"
+                                onClick={() => setGameName(cat.name)}
+                                className={`text-left text-[11px] p-2.5 rounded-xl border transition-all flex items-center justify-between ${
+                                  gameName === cat.name
+                                    ? 'bg-emerald-950/20 border-emerald-500 text-white font-semibold'
+                                    : 'bg-[#0f0f0f] border-[#2d2d2d] text-zinc-400 hover:text-white'
+                                }`}
+                              >
+                                <span className="truncate">{cat.name}</span>
+                                {gameName === cat.name && (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0 ml-1.5" />
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-zinc-300">Custom Game / Category Name</label>
+                          <input
+                            type="text"
+                            value={gameName}
+                            onChange={(e) => setGameName(e.target.value)}
+                            placeholder="e.g. Counter-Strike 2, Apex Legends, League of Legends"
+                            className="w-full bg-[#0f0f0f] border border-[#2d2d2d] focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-xs text-white transition-all outline-none font-sans"
+                          />
+                        </div>
+
+                      </div>
+                    )}
+                  </div>
+
                   {/* Enforced Guidelines Setting */}
                   <div className="bg-[#171717] border border-[#2d2d2d] rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                     <div className="space-y-0.5">
@@ -610,7 +746,11 @@ export default function StreamAutomatorDashboard() {
                     <button
                       type="submit"
                       disabled={isSyncing}
-                      className="w-full py-4 px-6 rounded-xl bg-[#ff0000] hover:bg-[#cc0000] text-white font-bold tracking-wide transition-all shadow-lg hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 text-sm font-sans"
+                      className={`w-full py-4 px-6 rounded-xl text-white font-bold tracking-wide transition-all shadow-lg hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 text-sm font-sans ${
+                        kickSync 
+                          ? 'bg-gradient-to-r from-[#ff0000] to-[#00e701] hover:brightness-110' 
+                          : 'bg-[#ff0000] hover:bg-[#cc0000]'
+                      }`}
                     >
                       {isSyncing ? (
                         <>
@@ -620,7 +760,7 @@ export default function StreamAutomatorDashboard() {
                       ) : (
                         <>
                           <Clock className="h-5 w-5" />
-                          Generate & Schedule stream to YouTube
+                          Generate & Schedule stream {kickSync ? 'to YouTube + Kick' : 'to YouTube'}
                         </>
                       )}
                     </button>

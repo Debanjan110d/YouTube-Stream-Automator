@@ -39,7 +39,9 @@ export default function SyncOverlay({
         <div className="absolute top-0 inset-x-0 h-1 bg-[#ff0000]" />
         
         <div className="space-y-2 text-center">
-          <h3 className="text-xl font-bold tracking-tight">Syncing to YouTube</h3>
+          <h3 className="text-xl font-bold tracking-tight">
+            Syncing to {syncSteps.length > 4 ? 'YouTube & Kick' : 'YouTube'}
+          </h3>
           <p className="text-xs text-zinc-400">Please do not close this browser tab while we build the livestream.</p>
         </div>
 

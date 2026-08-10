@@ -15,7 +15,8 @@ import {
   Globe,
   FileCode,
   Copy,
-  Check
+  Check,
+  Video
 } from 'lucide-react';
 
 
@@ -23,6 +24,7 @@ const MD_TEMPLATE = `---
 title: "Building a Next.js API route 🚀 #webdev #nextjs"
 type: "28"
 privacy: "public"
+game: "Software Development"
 tags: ["nextjs", "typescript", "api", "web development", "backend", "live coding"]
 ---
 Welcome to today's livestream session!
@@ -44,6 +46,7 @@ const JSON_TEMPLATE = `{
   ],
   "categoryId": "28",
   "privacyStatus": "public",
+  "gameName": "Software Development",
   "tags": ["oauth2", "google login", "session", "security", "node js", "web dev"],
   "description": "Welcome to Gamer's Code Lab!\\n\\nIn this session, we will deep dive into securing Google and YouTube API logins, managing offline refresh tokens, and encrypting cookie payloads using server-side JWE.\\n\\nCheck out the GitHub link in the description for the full source code."
 }`;
@@ -55,6 +58,7 @@ const YAML_TEMPLATE = `title:
   - "Live Coding: Building a React Dashboard 💻 #webdev"
 category: "28"
 privacy: "unlisted"
+game: "Software Development"
 tags:
   - react
   - javascript
@@ -100,18 +104,19 @@ export default function PublicHomePage() {
       
       {/* Floating background mesh accents */}
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#ff0000]/5 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-[#ff0000]/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-[#00e701]/3 rounded-full blur-3xl pointer-events-none" />
 
 
       {/* Header section */}
-      <header className="border-b border-[#2d2d2d] bg-[#0f0f0f]/90 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <header className="border-b border-[#2d2d2d] bg-[#0f0f0f]/90 backdrop-blur-md sticky top-0 z-40 relative">
+        <div className="h-[2px] bg-gradient-to-r from-[#ff0000] via-[#527d0c] to-[#00e701] w-full absolute top-0 left-0" />
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between mt-[2px]">
           <div className="flex items-center gap-2">
-            <div className="bg-[#ff0000] p-1.5 rounded-lg flex items-center justify-center">
+            <div className="bg-gradient-to-tr from-[#ff0000] to-[#00e701] p-1.5 rounded-lg flex items-center justify-center shadow-md">
               <Tv className="h-5 w-5 text-white" />
             </div>
             <span className="text-xl font-bold tracking-tight text-white">
-              YouTube <span className="font-normal text-zinc-300">Stream Automator</span>
+              Stream <span className="font-normal text-zinc-300">Automator</span>
             </span>
           </div>
           
@@ -161,19 +166,19 @@ export default function PublicHomePage() {
       <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-16 sm:py-24 flex flex-col items-center justify-center text-center space-y-16 z-10">
         
         <div className="space-y-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#ff0000]/10 border border-[#ff0000]/20 text-xs text-[#ff3333] font-semibold uppercase tracking-wider mb-2 animate-pulse mx-auto w-fit">
-            <Sparkles className="h-3.5 w-3.5 text-[#ff0000]" /> General Purpose Stream Scheduler
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-[#ff0000]/10 to-[#00e701]/10 border border-zinc-800 text-xs text-zinc-300 font-semibold uppercase tracking-wider mb-2 mx-auto w-fit">
+            <Sparkles className="h-3.5 w-3.5 text-[#ff0000]" /> YouTube & Kick Automation Tool
           </div>
 
           <div className="space-y-4 max-w-3xl">
             <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">
-              Schedule Livestreams on YouTube <br />
-              <span className="bg-gradient-to-r from-[#ff0000] via-red-500 to-pink-500 bg-clip-text text-transparent">
-                In a Single Click
+              Schedule Streams on YouTube & Kick <br />
+              <span className="bg-gradient-to-r from-[#ff0000] via-[#527d0c] to-[#00e701] bg-clip-text text-transparent">
+                Simultaneously in One Click
               </span>
             </h1>
             <p className="text-zinc-400 text-base sm:text-xl leading-relaxed max-w-2xl mx-auto font-medium">
-              Automate your broadcast publishing pipelines. Drop your stream configuration file, select your thumbnail, and set up your scheduled stream with OBS integration instantly.
+              Automate your broadcast publishing pipelines. Drop your stream configuration file, select your game title, compress your thumbnail, and go live on both platforms instantly.
             </p>
           </div>
 
@@ -246,14 +251,14 @@ export default function PublicHomePage() {
             </div>
 
             {/* Card 3 */}
-            <div className="bg-[#1f1f1f] border border-[#2d2d2d] p-6 rounded-2xl space-y-4 shadow-md hover:border-[#ff0000]/30 transition-colors group">
+            <div className="bg-[#1f1f1f] border border-[#2d2d2d] p-6 rounded-2xl space-y-4 shadow-md hover:border-[#00e701]/30 transition-colors group">
               <div className="bg-emerald-500/10 p-2.5 rounded-xl text-emerald-400 w-fit">
-                <Zap className="h-5 w-5" />
+                <Video className="h-5 w-5" />
               </div>
               <div className="space-y-1">
-                <h4 className="font-semibold text-zinc-100 text-sm group-hover:text-white transition-colors">OBS Stream Key Binding</h4>
+                <h4 className="font-semibold text-zinc-100 text-sm group-hover:text-white transition-colors">YouTube & Kick Sync</h4>
                 <p className="text-xs text-zinc-400 leading-relaxed">
-                  Automatically retrieves your channel&apos;s active default ingest key and binds it to the scheduled event.
+                  Resolves gaming categories dynamically and syncs stream titles and games to Kick.com in parallel with YouTube.
                 </p>
               </div>
             </div>

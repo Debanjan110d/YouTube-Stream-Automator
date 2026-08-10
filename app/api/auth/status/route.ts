@@ -12,8 +12,15 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    authenticated: true,
-    channelName: session.channelName,
-    channelAvatar: session.channelAvatar,
+    authenticated: !!session.accessToken,
+    youtube: session.accessToken ? {
+      name: session.channelName,
+      avatar: session.channelAvatar,
+    } : null,
+    kick: session.kickAccessToken ? {
+      slug: session.kickChannelSlug,
+      name: session.kickChannelName,
+      avatar: session.kickChannelAvatar,
+    } : null,
   });
 }

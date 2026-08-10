@@ -25,16 +25,19 @@ export default function DashboardHeader({ channelInfo, onLogout }: DashboardHead
   }, []);
 
   return (
-    <header className="border-b border-[#2d2d2d] bg-[#0f0f0f] sticky top-0 z-40 transition-all">
+    <header className="border-b border-[#2d2d2d] bg-[#0f0f0f] sticky top-0 z-40 transition-all relative">
+      {/* Dynamic multi-platform theme top stripe */}
+      <div className="h-[2px] bg-gradient-to-r from-[#ff0000] via-[#527d0c] to-[#00e701] w-full absolute top-0 left-0" />
+      
       <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
         
-        <div className="flex items-center gap-4 sm:gap-6">
+        <div className="flex items-center gap-4 sm:gap-6 mt-[2px]">
           <Link href="/" className="flex items-center gap-2">
-            <div className="bg-[#ff0000] p-1.5 rounded-lg flex items-center justify-center">
+            <div className="bg-gradient-to-tr from-[#ff0000] to-[#00e701] p-1.5 rounded-lg flex items-center justify-center shadow-md">
               <Tv className="h-5 w-5 text-white" />
             </div>
             <h1 className="text-xl font-bold tracking-tight text-white font-sans flex items-center gap-1.5">
-              YouTube <span className="font-normal text-zinc-300">Stream Automator</span>
+              Stream <span className="font-normal text-zinc-300">Automator</span>
             </h1>
           </Link>
 

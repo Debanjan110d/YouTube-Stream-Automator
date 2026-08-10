@@ -5,6 +5,7 @@ export interface ParsedStreamConfig {
   tags: string[];
   categoryId: string;
   privacyStatus: string;
+  gameName?: string; // Kick Category / Game name parameter
 }
 
 
@@ -20,6 +21,7 @@ export function parseStreamFile(text: string, filename?: string): ParsedStreamCo
     tags: [],
     categoryId: '28', // default: Science & Tech (28)
     privacyStatus: 'public',
+    gameName: '',
   };
 
   const normalizedText = text.trim();
@@ -57,6 +59,8 @@ export function parseStreamFile(text: string, filename?: string): ParsedStreamCo
       if (json.category) result.categoryId = String(json.category);
       if (json.privacyStatus) result.privacyStatus = String(json.privacyStatus).toLowerCase();
       if (json.privacy) result.privacyStatus = String(json.privacy).toLowerCase();
+      if (json.gameName) result.gameName = String(json.gameName);
+      if (json.game) result.gameName = String(json.game);
 
       return result;
     } catch (e) {
@@ -177,6 +181,11 @@ export function parseStreamFile(text: string, filename?: string): ParsedStreamCo
           } else {
             result.tags = val.split(',').map((t) => t.trim()).filter(Boolean);
           }
+          break;
+
+        case 'game':
+        case 'gamename':
+          result.gameName = val;
           break;
       }
     }

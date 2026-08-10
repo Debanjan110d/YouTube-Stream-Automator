@@ -4,7 +4,6 @@ import { getSession } from '@/lib/session';
 import fs from 'fs/promises';
 import path from 'path';
 
-
 export async function POST(request: NextRequest) {
   try {
     // Retrieve secure session to log channel stats
@@ -28,6 +27,10 @@ export async function POST(request: NextRequest) {
     const tagsJson = formData.get('tags') as string; // Expecting a JSON array string
     const thumbnailFile = formData.get('thumbnail') as File | null;
 
+    // Kick parameters
+    const kickSync = formData.get('kickSync') === 'true';
+    const gameName = formData.get('gameName') as string || 'Just Chatting';
+
     // Validate inputs
     if (!title || !scheduledTime) {
       return NextResponse.json(
@@ -48,8 +51,7 @@ export async function POST(request: NextRequest) {
 
     console.log('Initiating stream creation pipeline...');
 
-
-    // 1. Create the Live Broadcast event (setting selfDeclaredMadeForKids to false as requested)
+    // 1. Insert YouTube Live Broadcast
     const broadcastResponse = await youtube.liveBroadcasts.insert({
       part: ['snippet', 'status'],
       requestBody: {
@@ -60,19 +62,17 @@ export async function POST(request: NextRequest) {
         },
         status: {
           privacyStatus,
-          selfDeclaredMadeForKids: false, // Forces NOT FOR KIDS (normal stream)
+          selfDeclaredMadeForKids: false,
         },
       },
     });
 
     const videoId = broadcastResponse.data.id;
     if (!videoId) {
-      throw new Error('YouTube failed to return a valid Broadcast ID.');
+      throw new Error('YouTube Broadcast creation succeeded but no video ID was returned.');
     }
-    console.log(`Step 1 Complete: Broadcast created with Video ID: ${videoId}`);
 
-
-    // 2. Set Category and Tags (belong to the Video object container)
+    // 2. Set Category and Search Tags
     await youtube.videos.update({
       part: ['snippet'],
       requestBody: {
@@ -85,59 +85,97 @@ export async function POST(request: NextRequest) {
         },
       },
     });
-    console.log(`Step 2 Complete: Applied category (${categoryId}) and tags to Video: ${videoId}`);
-
 
     // 3. Upload Thumbnail (if provided)
-    if (thumbnailFile && thumbnailFile.size > 0) {
-      try {
-        const arrayBuffer = await thumbnailFile.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
+    if (thumbnailFile) {
+      const arrayBuffer = await thumbnailFile.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
 
-        await youtube.thumbnails.set({
-          videoId,
-          media: {
-            mimeType: thumbnailFile.type || 'image/jpeg',
-            body: buffer,
-          },
-        });
-        console.log('Step 3 Complete: Thumbnail uploaded successfully.');
-      } catch (thumbError: any) {
-        console.error('Warning: Failed to upload thumbnail:', thumbError);
-      }
-    } else {
-      console.log('Step 3 Skipped: No thumbnail provided.');
+      await youtube.thumbnails.set({
+        videoId,
+        media: {
+          mimeType: thumbnailFile.type,
+          body: buffer,
+        },
+      });
     }
 
-
-    // 4. Bind the broadcast to the user's default ingest Stream Key (Optional but highly recommended for OBS)
+    // 4. Find active ingest stream key and bind it to broadcast
     let boundStream = false;
     try {
-      console.log('Attempting to bind stream to default ingest key...');
-      const streamsResponse = await youtube.liveStreams.list({
+      const streamListRes = await youtube.liveStreams.list({
+        part: ['snippet', 'cdn'],
         mine: true,
-        part: ['id', 'snippet'],
-        maxResults: 1,
       });
 
-      const streamId = streamsResponse.data.items?.[0]?.id;
-      if (streamId) {
+      const activeStream = streamListRes.data.items?.[0];
+      if (activeStream && activeStream.id) {
         await youtube.liveBroadcasts.bind({
           id: videoId,
           part: ['id', 'snippet'],
-          streamId,
+          streamId: activeStream.id,
         });
         boundStream = true;
-        console.log(`Step 4 Complete: Broadcast bound successfully to Stream Key ID: ${streamId}`);
-      } else {
-        console.log('Step 4 Warn: No active Stream Key found on YouTube. Stream is scheduled but unbound.');
+        console.log(`Successfully bound stream ${activeStream.id} to broadcast.`);
       }
-    } catch (bindError) {
-      console.error('Warning: Could not bind broadcast to a stream key automatically:', bindError);
+    } catch (streamError) {
+      console.warn('Failed to bind active default ingest stream key. Creator must bind OBS manually:', streamError);
     }
 
+    // 5. Sync metadata to Kick (if checked and authenticated)
+    let kickSynced = false;
+    let kickError: string | null = null;
 
-    // 5. Append scheduling action to Server-Side Analytics (Stored locally in analytics.json)
+    if (kickSync && session.kickAccessToken) {
+      try {
+        console.log(`Syncing Kick category lookup for: ${gameName}`);
+        
+        let kickCategoryId: number | null = null;
+        
+        // 5a. Lookup Kick Category by Game name
+        const catRes = await fetch(`https://api.kick.com/public/v1/categories?q=${encodeURIComponent(gameName)}`, {
+          headers: {
+            'Authorization': `Bearer ${session.kickAccessToken}`,
+            'Accept': 'application/json',
+          }
+        });
+        
+        if (catRes.ok) {
+          const catData = await catRes.json();
+          kickCategoryId = catData.data?.[0]?.id || null;
+        } else {
+          console.warn('Failed to query categories from Kick API:', await catRes.text());
+        }
+
+        // 5b. Update channel title & category
+        const patchRes = await fetch('https://api.kick.com/public/v1/channels', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.kickAccessToken}`,
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({
+            stream_title: title,
+            category_id: kickCategoryId || undefined,
+          }),
+        });
+
+        if (patchRes.ok || patchRes.status === 204) {
+          kickSynced = true;
+          console.log('Kick channel metadata updated successfully.');
+        } else {
+          const errBody = await patchRes.text();
+          kickError = `Status ${patchRes.status}: ${errBody}`;
+          console.warn('Kick channel update rejected:', kickError);
+        }
+      } catch (kickErr: any) {
+        kickError = kickErr.message || String(kickErr);
+        console.error('Failed to sync to Kick channel:', kickErr);
+      }
+    }
+
+    // 6. Append scheduling action to Server-Side Analytics (Stored locally in analytics.json)
     try {
       const analyticsPath = path.join(process.cwd(), 'analytics.json');
       let analyticsData: any[] = [];
@@ -157,6 +195,7 @@ export async function POST(request: NextRequest) {
         title,
         categoryId,
         privacyStatus,
+        kickSynced,
       });
 
       await fs.writeFile(analyticsPath, JSON.stringify(analyticsData, null, 2), 'utf-8');
@@ -165,12 +204,15 @@ export async function POST(request: NextRequest) {
       console.error('Failed to write to analytics file:', analyticsError);
     }
 
-
     return NextResponse.json({
       success: true,
       videoId,
       boundStream,
-      message: 'Live stream scheduled and configured successfully!',
+      kickSynced,
+      kickError,
+      message: kickSync 
+        ? (kickSynced ? 'YouTube & Kick broadcasts synced successfully!' : `YouTube scheduled, but Kick sync failed: ${kickError}`)
+        : 'Live stream scheduled and configured successfully!',
     });
   } catch (error: any) {
     console.error('Pipeline Error:', error);
