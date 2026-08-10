@@ -1,11 +1,30 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
 import fs from 'fs/promises';
 import path from 'path';
 
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // 1. Strict CSRF Cross-Origin & Referer validation
+    const origin = request.headers.get('origin');
+    const referer = request.headers.get('referer');
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
+    if (origin && !origin.startsWith(appUrl)) {
+      return NextResponse.json(
+        { error: 'CORS policy blocks cross-origin analytics access.' },
+        { status: 403 }
+      );
+    }
+
+    if (referer && !referer.startsWith(appUrl)) {
+      return NextResponse.json(
+        { error: 'Referer validation failed. Request originates from an untrusted source.' },
+        { status: 403 }
+      );
+    }
+
     const session = await getSession();
     
     if (!session) {

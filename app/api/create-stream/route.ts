@@ -6,6 +6,25 @@ import path from 'path';
 
 export async function POST(request: NextRequest) {
   try {
+    // 1. Strict CSRF Cross-Origin & Referer validation
+    const origin = request.headers.get('origin');
+    const referer = request.headers.get('referer');
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
+    if (origin && !origin.startsWith(appUrl)) {
+      return NextResponse.json(
+        { error: 'CORS policy blocks cross-origin stream creation requests.' },
+        { status: 403 }
+      );
+    }
+
+    if (referer && !referer.startsWith(appUrl)) {
+      return NextResponse.json(
+        { error: 'Referer validation failed. Request originates from an untrusted source.' },
+        { status: 403 }
+      );
+    }
+
     // Retrieve secure session to log channel stats
     const session = await getSession();
     

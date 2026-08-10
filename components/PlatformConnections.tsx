@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ShieldCheck, Video, Link2, XCircle, LogOut } from 'lucide-react';
+import { ShieldCheck, Video, Link2, XCircle, LogOut, Key, Loader2 } from 'lucide-react';
 
 interface PlatformConnectionsProps {
   youtubeInfo: { name: string; avatar: string } | null;
@@ -17,6 +17,7 @@ export default function PlatformConnections({
   showFeedback
 }: PlatformConnectionsProps) {
   const [disconnecting, setDisconnecting] = useState(false);
+  const [copyingMcp, setCopyingMcp] = useState(false);
 
   const handleConnectKick = () => {
     // Redirect user to start the Kick OAuth 2.1 PKCE authorization flow
@@ -37,6 +38,24 @@ export default function PlatformConnections({
       showFeedback('error', 'Network error disconnecting Kick.');
     } finally {
       setDisconnecting(false);
+    }
+  };
+
+  const handleCopyMcpToken = async () => {
+    setCopyingMcp(true);
+    try {
+      const res = await fetch('/api/auth/mcp-token');
+      if (res.ok) {
+        const data = await res.json();
+        await navigator.clipboard.writeText(data.token);
+        showFeedback('success', 'MCP Session Key copied to clipboard!');
+      } else {
+        showFeedback('error', 'Please log in to YouTube first.');
+      }
+    } catch (e) {
+      showFeedback('error', 'Failed to copy session key.');
+    } finally {
+      setCopyingMcp(false);
     }
   };
 
@@ -120,6 +139,26 @@ export default function PlatformConnections({
             Connect Kick Channel
           </button>
         )}
+
+        {/* MCP Client key copy button */}
+        <button
+          type="button"
+          onClick={handleCopyMcpToken}
+          disabled={copyingMcp}
+          className="w-full mt-2 py-2.5 px-4 bg-[#272727] hover:bg-[#3f3f3f] border border-[#3f3f3f] text-zinc-300 hover:text-white rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all"
+        >
+          {copyingMcp ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Copying Session Key...
+            </>
+          ) : (
+            <>
+              <Key className="h-3.5 w-3.5 text-zinc-500" />
+              Copy MCP Session Key
+            </>
+          )}
+        </button>
 
       </div>
     </div>

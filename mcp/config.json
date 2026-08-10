@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "stream-automator": {
+      "command": "node",
+      "args": ["d:/projects/livestream_set/mcp/dist/server.js"],
+      "env": {
+        "NEXT_PUBLIC_APP_URL": "http://localhost:3000",
+        "STREAM_AUTOMATOR_SESSION": "PASTE_YOUR_COPIED_MCP_SESSION_KEY_HERE"
+      }
+    }
+  }
+}
