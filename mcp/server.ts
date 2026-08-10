@@ -5,7 +5,7 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 
-// Setup server details
+// setup server details here
 const server = new Server(
   {
     name: 'stream-automator-mcp',
@@ -18,9 +18,11 @@ const server = new Server(
   }
 );
 
-// Get Next.js server base URL from environment (default localhost)
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-const SESSION_KEY = process.env.STREAM_AUTOMATOR_SESSION || '';
+
+// get Next.js server base URL from env variables (default to local host 3000)
+const APP_URL=process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+const SESSION_KEY = process.env.STREAM_AUTOMATOR_SESSION||'';
+
 
 /**
  * Helper to execute authorized API calls back to the local Next.js server.

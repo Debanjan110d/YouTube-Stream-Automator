@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
-  // 1. Strict CSRF Cross-Origin and Referer validation
+  // strict csrf cross-origin & referer validation just to be safe
   const origin = request.headers.get('origin');
   const referer = request.headers.get('referer');
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -31,5 +31,6 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({ token: sessionCookie });
+  // returning raw token for mcp config mapping
+  return NextResponse.json({token: sessionCookie});
 }

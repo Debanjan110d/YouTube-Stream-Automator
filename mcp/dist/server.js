@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const index_js_1 = require("@modelcontextprotocol/sdk/server/index.js");
 const stdio_js_1 = require("@modelcontextprotocol/sdk/server/stdio.js");
 const types_js_1 = require("@modelcontextprotocol/sdk/types.js");
-// Setup server details
+// setup server details here
 const server = new index_js_1.Server({
     name: 'stream-automator-mcp',
     version: '1.0.0',
@@ -12,7 +12,7 @@ const server = new index_js_1.Server({
         tools: {},
     },
 });
-// Get Next.js server base URL from environment (default localhost)
+// get Next.js server base URL from env variables (default to local host 3000)
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 const SESSION_KEY = process.env.STREAM_AUTOMATOR_SESSION || '';
 /**
