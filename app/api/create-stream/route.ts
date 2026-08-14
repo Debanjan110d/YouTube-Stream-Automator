@@ -4,23 +4,47 @@ import { getSession } from '@/lib/session';
 import fs from 'fs/promises';
 import path from 'path';
 
+function isRequestTrusted(request: NextRequest): boolean {
+  const origin = request.headers.get('origin');
+  const referer = request.headers.get('referer');
+  
+  const host = request.headers.get('host');
+  const xForwardedHost = request.headers.get('x-forwarded-host');
+  const targetHost = xForwardedHost || host;
+  if (!targetHost) return false;
+
+  if (origin) {
+    try {
+      const originUrl = new URL(origin);
+      if (originUrl.host === targetHost) return true;
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+      if (appUrl && originUrl.host === new URL(appUrl).host) return true;
+    } catch {
+      return false;
+    }
+    return false;
+  }
+
+  if (referer) {
+    try {
+      const refererUrl = new URL(referer);
+      if (refererUrl.host === targetHost) return true;
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+      if (appUrl && refererUrl.host === new URL(appUrl).host) return true;
+    } catch {
+      return false;
+    }
+    return false;
+  }
+
+  return true;
+}
+
 export async function POST(request: NextRequest) {
   try {
-    // 1. Strict CSRF Cross-Origin & Referer validation
-    const origin = request.headers.get('origin');
-    const referer = request.headers.get('referer');
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-
-    if (origin && !origin.startsWith(appUrl)) {
+    if (!isRequestTrusted(request)) {
       return NextResponse.json(
         { error: 'CORS policy blocks cross-origin stream creation requests.' },
-        { status: 403 }
-      );
-    }
-
-    if (referer && !referer.startsWith(appUrl)) {
-      return NextResponse.json(
-        { error: 'Referer validation failed. Request originates from an untrusted source.' },
         { status: 403 }
       );
     }
