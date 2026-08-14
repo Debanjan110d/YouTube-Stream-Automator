@@ -1,8 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getYouTubeClient } from '@/lib/youtube';
-import { getSession } from '@/lib/session';
+import { getSession, setSessionCookie } from '@/lib/session';
 import fs from 'fs/promises';
 import path from 'path';
+
+async function refreshKickAccessToken(refreshToken: string) {
+  const clientId = process.env.KICK_CLIENT_ID;
+  const clientSecret = process.env.KICK_CLIENT_SECRET;
+  if (!clientId || !clientSecret) {
+    throw new Error('Kick client credentials are not configured in .env.local.');
+  }
+
+  const tokenParams = new URLSearchParams();
+  tokenParams.set('grant_type', 'refresh_token');
+  tokenParams.set('client_id', clientId);
+  tokenParams.set('client_secret', clientSecret);
+  tokenParams.set('refresh_token', refreshToken);
+
+  const tokenRes = await fetch('https://id.kick.com/oauth/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Accept': 'application/json',
+    },
+    body: tokenParams.toString(),
+  });
+
+  if (!tokenRes.ok) {
+    const errText = await tokenRes.text();
+    throw new Error(`Kick token refresh endpoint rejected credentials: ${errText}`);
+  }
+
+  const data = await tokenRes.json();
+  return {
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token || refreshToken,
+  };
+}
 
 function isRequestTrusted(request: NextRequest): boolean {
   const origin = request.headers.get('origin');
@@ -173,36 +207,61 @@ export async function POST(request: NextRequest) {
       try {
         console.log(`Syncing Kick category lookup for: ${gameName}`);
         
-        let kickCategoryId: number | null = null;
-        
-        // 5a. Lookup Kick Category by Game name
-        const catRes = await fetch(`https://api.kick.com/public/v1/categories?q=${encodeURIComponent(gameName)}`, {
-          headers: {
-            'Authorization': `Bearer ${session.kickAccessToken}`,
-            'Accept': 'application/json',
-          }
-        });
-        
-        if (catRes.ok) {
-          const catData = await catRes.json();
-          kickCategoryId = catData.data?.[0]?.id || null;
-        } else {
-          console.warn('Failed to query categories from Kick API:', await catRes.text());
-        }
+        let activeToken = session.kickAccessToken;
+        let activeRefreshToken = session.kickRefreshToken;
 
-        // 5b. Update channel title & category
-        const patchRes = await fetch('https://api.kick.com/public/v1/channels', {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.kickAccessToken}`,
-            'Accept': 'application/json',
-          },
-          body: JSON.stringify({
-            stream_title: title,
-            category_id: kickCategoryId || undefined,
-          }),
-        });
+        const patchKickChannel = async (token: string) => {
+          let kickCategoryId: number | null = null;
+          
+          // 5a. Lookup Kick Category by Game name
+          const catRes = await fetch(`https://api.kick.com/public/v1/categories?q=${encodeURIComponent(gameName)}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/json',
+            }
+          });
+          
+          if (catRes.ok) {
+            const catData = await catRes.json();
+            kickCategoryId = catData.data?.[0]?.id || null;
+          }
+
+          // 5b. Update channel title & category
+          return await fetch('https://api.kick.com/public/v1/channels', {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+              stream_title: title,
+              category_id: kickCategoryId || undefined,
+            }),
+          });
+        };
+
+        // Try API update
+        let patchRes = await patchKickChannel(activeToken);
+
+        // If unauthorized (token expired), refresh and retry once!
+        if (patchRes.status === 401 && activeRefreshToken) {
+          console.log('Kick access token expired (401 status). Initiating token refresh...');
+          try {
+            const refreshResult = await refreshKickAccessToken(activeRefreshToken);
+            console.log('Kick token refresh completed.');
+            
+            // Save updated session
+            session.kickAccessToken = refreshResult.accessToken;
+            session.kickRefreshToken = refreshResult.refreshToken;
+            await setSessionCookie(session);
+            
+            // Retry API update
+            patchRes = await patchKickChannel(refreshResult.accessToken);
+          } catch (refreshErr) {
+            console.error('Kick token refresh retry error:', refreshErr);
+          }
+        }
 
         if (patchRes.ok || patchRes.status === 204) {
           kickSynced = true;
